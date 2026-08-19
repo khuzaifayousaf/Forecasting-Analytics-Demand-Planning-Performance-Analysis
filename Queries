@@ -1,0 +1,272 @@
+create database Forecasting_Analytics_Project;
+use  Forecasting_Analytics_Project;
+create schema Bronze;
+create schema Silver;
+create schema Gold;
+------>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+---------Create Table & Insert Data into it
+create table bronze.fact_forecast_demand (
+Date date,
+Week INT,
+Month int,
+Quarter int,
+Year int,
+Product_ID int,
+SKU nvarchar(50),
+Product_Name varchar(50),
+Category_ID varchar(50),
+Brand_ID varchar(50),
+Region_ID int,
+Warehouse_ID int,
+Channel_ID	int,
+Customer_ID int,
+Actual_Demand_Qty int,
+Forecast_Qty int,
+Sales_Qty int,
+Sales_Value float,
+Opening_Inventory int,
+Closing_Inventory int,
+Safety_Stock int,
+Reorder_Point int,
+Lead_Time_Days int,
+Promotion_ID int,
+Holiday_ID int,
+Unit_Price float,
+Discount_Percentage int,
+Stockout_Flag int,
+Lost_Sales_Qty int,
+Returns_Qty int
+);
+go
+bulk insert [Bronze].[fact_forecast_demand]
+from 'C:\Projetcs\Forecasting Analytics Project\Fact_Forecast_Demand__.csv'
+with (
+	firstrow = 2,
+	fieldterminator = ',',
+	tablock
+	);
+------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+create table bronze.dim_channel (
+Channel_Id int,
+Channel varchar(50)
+);
+
+ bulk insert bronze.dim_channel
+from 'C:\Projetcs\Forecasting Analytics Project\Dim_Channel.csv'
+with (
+	firstrow = 2,
+	fieldterminator = ',',
+	tablock
+	);
+------>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+create table bronze.dim_customer (
+Customer_Id int,
+Customer_Name varchar(50),
+Customer_Type varchar(50)
+);
+go
+ bulk insert [Bronze].[dim_customer]
+from 'C:\Projetcs\Forecasting Analytics Project\Dim_Customer.csv'
+with (
+	firstrow = 2,
+	fieldterminator = ',',
+	tablock
+	);
+------>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+create table bronze.dim_holiday (
+Holiday_ID int,
+Holiday_Name varchar(50),
+Holiday_Type varchar(50)
+);
+go
+ bulk insert bronze.dim_holiday
+from 'C:\Projetcs\Forecasting Analytics Project\Dim_Holiday.csv'
+with (
+	firstrow = 2,
+	fieldterminator = ',',
+	tablock
+	);
+----->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+create table bronze.dim_product (
+Product_ID int,
+SKU nvarchar(50),
+Product_Name varchar(50),
+Brand varchar(50),
+Category varchar(50),
+Subcategory varchar(50),
+Pack_Size varchar(50),
+Unit varchar(50)
+);
+ bulk insert bronze.dim_product
+from 'C:\Projetcs\Forecasting Analytics Project\Dim_Product.csv'
+with (
+	firstrow = 2,
+	fieldterminator = ',',
+	tablock
+	);
+-------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+create table bronze.dim_region (
+Region_ID int,
+Region varchar(50),
+Country	varchar(50),
+Zone varchar(50)
+);
+ bulk insert bronze.dim_region
+from 'C:\Projetcs\Forecasting Analytics Project\Dim_Region.csv'
+with (
+	firstrow = 2,
+	fieldterminator = ',',
+	tablock
+	);
+------>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+create table bronze.dim_promotion (
+Promotion_ID int,
+Promotion_Name varchar(50),
+Promotion_Type varchar(50)
+);
+ bulk insert bronze.dim_promotion
+from 'C:\Projetcs\Forecasting Analytics Project\Dim_promotion.csv'
+with (
+	firstrow = 2,
+	fieldterminator = ',',
+	tablock
+	);
+----->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+create table bronze.dim_warehouse (
+Warehouse_ID int,
+Warehouse_Name varchar(50),
+Region_ID int,
+Capacity int
+);
+ bulk insert bronze.dim_warehouse
+from 'C:\Projetcs\Forecasting Analytics Project\Dim_Warehouse.csv'
+with (
+	firstrow = 2,
+	fieldterminator = ',',
+	tablock
+	);
+-------------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+/*---->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+Forecasting Analytics Exploratory Data Analysis
+--->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+*/
+select
+'Measure Value' as Total_Sales,
+format(cast(sum(f.Sales_Value) as int), 'c') as Measure_Value
+from Silver.fact_forecast_demand as f;
+---Total Demand Quantity---------
+select
+'Total_Demand_Qty' as Meaasure_Name,
+sum(f.Actual_Demand_Qty) as Meaasure_Value
+from Silver.fact_forecast_demand as f;
+---Total Forecast Quantity-------
+select
+sum(f.Forecast_Qty) as Total_Forecast_Qty
+from Silver.fact_forecast_demand as f;
+--Product and Their Sales-----
+select
+p.Product_Name,
+p.Brand,
+p.category,
+cast(sum(f.Sales_Value) as int) as Total_Sales
+from Silver.fact_forecast_demand as f
+left join Silver.dim_product as p
+on f.Product_ID = p.Product_ID
+group by p.Product_Name,
+p.Brand,
+p.category
+order by Total_Sales desc;
+--------
+select
+p.category,
+cast(sum(f.Sales_Value) as int) as Total_Sales
+from Silver.fact_forecast_demand as f
+left join Silver.dim_product as p
+on f.Product_ID = p.Product_ID
+group by
+p.category
+order by Total_Sales desc;
+----Region Vise EDA---------
+select
+r.Country,
+r.Region,
+r.Zone,
+sum(f.Sales_Value) as Total_Sales,
+sum(f.Forecast_Qty) as Forecast_Qty,
+sum(f.Actual_Demand_Qty) as Actual_Demand_Qty
+from silver.fact_forecast_demand as f
+left join silver.dim_region as r
+on f.Region_ID = r.Region_ID
+group by 
+r.Country,
+r.Region,
+r.Zone
+order by Total_Sales desc;
+----Channel Vise EDA------
+select
+c.Channel,
+sum(f.Sales_Value) as Total_Sales,
+sum(f.Lost_Sales_Qty) as Lost_Sales_Qty,
+sum(f.Forecast_Qty) as Forecast_Qty,
+sum(f.Actual_Demand_Qty) as Actual_Demand_Qty
+from Silver.fact_forecast_demand as f
+left join silver.dim_channel as c
+on f.Channel_ID = c.Channel_Id
+group by c.Channel
+order by Total_Sales desc;
+----Customer Vise EDA------
+select distinct
+c.Customer_Name,
+c.Customer_Type,
+sum(f.Sales_Value) as Total_Sales,
+sum(f.Sales_Qty) as Sales_Qty ,
+sum(f.Lost_Sales_Qty) as Lost_Sales_Qty
+from silver.fact_forecast_demand as f
+left join silver.dim_customer as c
+on f.Customer_ID = c.Customer_Id
+group by 
+c.Customer_Name,
+c.Customer_Type
+order by Total_Sales desc;
+--- Promotion Vise Sales
+select 
+p.Promotion_Name,
+p.Promotion_Type,
+sum(f.Sales_Value) as Total_Sales
+from Silver.fact_forecast_demand as f
+left join silver.dim_promotion as p
+on f.Promotion_ID = p.Promotion_ID
+group by
+p.Promotion_Name,
+p.Promotion_Type
+order by Total_Sales desc;
+--Holiday Vise EDA----
+select
+h.Holiday_Name,
+h.Holiday_Type,
+format(sum(f.Sales_Value),'c') as Total_Sales
+from silver.fact_forecast_demand as f
+left join silver.dim_holiday as h
+on f.Holiday_ID = h.Holiday_ID
+group by 
+h.Holiday_Name,
+h.Holiday_Type;
+----Monthly Vise EDA----
+select
+datepart(month,f.Date) as Month,
+h.Holiday_Name,
+sum(f.Sales_Value) as Total_Sales
+from Silver.fact_forecast_demand as f
+left join Silver.dim_holiday as h
+on f.Holiday_ID = h.Holiday_ID
+group by 
+datepart(month,f.Date),
+h.Holiday_Name
+order by Total_Sales desc;
+---Week Vise EDA----
+select
+datepart(WEEK,f.Date) as Week_Part,
+sum(f.Sales_Value) as Total_Sales
+from Silver.fact_forecast_demand as f
+group by datepart(WEEK,f.Date)
+order by Total_Sales desc;
