@@ -1,0 +1,41 @@
+Product_ID,SKU,Product_Name,Brand,Category,Subcategory,Pack_Size,Unit
+1,SKU001,Cola 500ml,BVG,Beverages,General,Std,Unit
+2,SKU002,Orange Juice 1L,BVG,Beverages,General,Std,Unit
+3,SKU003,Mineral Water 1.5L,BVG,Beverages,General,Std,Unit
+4,SKU004,Energy Drink 250ml,BVG,Beverages,General,Std,Unit
+5,SKU005,Iced Tea 500ml,BVG,Beverages,General,Std,Unit
+6,SKU006,Lemon Soda 330ml,BVG,Beverages,General,Std,Unit
+7,SKU007,Mango Juice 1L,BVG,Beverages,General,Std,Unit
+8,SKU008,Sparkling Water 500ml,SNK,Snacks,General,Std,Unit
+9,SKU009,Potato Chips,SNK,Snacks,General,Std,Unit
+10,SKU010,Cheese Crackers,SNK,Snacks,General,Std,Unit
+11,SKU011,Salted Peanuts,SNK,Snacks,General,Std,Unit
+12,SKU012,Chocolate Cookies,SNK,Snacks,General,Std,Unit
+13,SKU013,Nachos,SNK,Snacks,General,Std,Unit
+14,SKU014,Popcorn,SNK,Snacks,General,Std,Unit
+15,SKU015,Pretzels,SNK,Snacks,General,Std,Unit
+16,SKU016,Corn Chips,DAR,Dairy,General,Std,Unit
+17,SKU017,Milk 1L,DAR,Dairy,General,Std,Unit
+18,SKU018,Yogurt Cup,DAR,Dairy,General,Std,Unit
+19,SKU019,Butter 200g,DAR,Dairy,General,Std,Unit
+20,SKU020,Cheese Slices,DAR,Dairy,General,Std,Unit
+21,SKU021,Cream 250ml,DAR,Dairy,General,Std,Unit
+22,SKU022,Flavored Milk,DAR,Dairy,General,Std,Unit
+23,SKU023,Shampoo,DAR,Dairy,General,Std,Unit
+24,SKU024,Soap,PCR,Personal Care,General,Std,Unit
+25,SKU025,Toothpaste,PCR,Personal Care,General,Std,Unit
+26,SKU026,Face Wash,PCR,Personal Care,General,Std,Unit
+27,SKU027,Body Lotion,PCR,Personal Care,General,Std,Unit
+28,SKU028,Hand Wash,PCR,Personal Care,General,Std,Unit
+29,SKU029,Laundry Detergent,PCR,Personal Care,General,Std,Unit
+30,SKU030,Dishwashing Liquid,PCR,Personal Care,General,Std,Unit
+31,SKU031,Surface Cleaner,PCR,Personal Care,General,Std,Unit
+32,SKU032,Toilet Cleaner,HCR,Home Care,General,Std,Unit
+33,SKU033,Fabric Softener,HCR,Home Care,General,Std,Unit
+34,SKU034,Floor Cleaner,HCR,Home Care,General,Std,Unit
+35,SKU035,Cereal,HCR,Home Care,General,Std,Unit
+36,SKU036,Biscuits,HCR,Home Care,General,Std,Unit
+37,SKU037,Fruit Jam,HCR,Home Care,General,Std,Unit
+38,SKU038,Cooking Oil,HCR,Home Care,General,Std,Unit
+39,SKU039,Rice,HCR,Home Care,General,Std,Unit
+40,SKU040,Tea Pack,HCR,Home Care,General,Std,Unit
