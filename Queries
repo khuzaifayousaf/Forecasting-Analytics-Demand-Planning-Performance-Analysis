@@ -270,3 +270,431 @@ sum(f.Sales_Value) as Total_Sales
 from Silver.fact_forecast_demand as f
 group by datepart(WEEK,f.Date)
 order by Total_Sales desc;
+
+----->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+------- Demand Analysis 
+------>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+--- Which Product Has the Highest Demand
+----Iced Tea 500ml = 10477 - Demand_Qty
+---Mineral Water 1.5L = 10082 - Demand_Qty
+--Corn Chips = 9925 - Demand_Qty
+select
+p.Product_Name,
+sum(f.Actual_Demand_Qty) as Actual_Demand_Qty,
+sum(f.Reorder_Point) as Reorder_Point
+from silver.fact_forecast_demand as f
+left join Silver.dim_product as p
+on f.Product_ID = p.Product_ID
+group by p.Product_Name
+order by Actual_Demand_Qty desc;
+----->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+--- Which Product Has the Lowest Demand
+----Cheese Slices = 5624 - Demand Qty
+----Potato Chips = 6056 - Demand Qty
+----Fruit Jam = 6553 - Demand Qty
+select
+p.Product_Name,
+sum(f.Actual_Demand_Qty) as Actual_Demand_Qty,
+sum(f.Reorder_Point) as Reorder_Point
+from silver.fact_forecast_demand as f
+left join Silver.dim_product as p
+on f.Product_ID = p.Product_ID
+group by p.Product_Name
+order by Actual_Demand_Qty asc;
+------>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+--- Which Category Has the Highest Demand
+----Home Care = 70164 - Demand_Qty
+select
+p.Category,
+sum(f.Actual_Demand_Qty) as Actual_Demand_Qty,
+sum(f.Reorder_Point) as Reorder_Point
+from silver.fact_forecast_demand as f
+left join Silver.dim_product as p
+on f.Product_ID = p.Product_ID
+group by Category
+order by Actual_Demand_Qty desc;
+----->>>>>>>>>>>>>>>>>>>>>>>
+--- Which Category Has the Lowest Demand
+----Beverages = 58226 - Demand_Qty
+select
+p.Category,
+sum(f.Actual_Demand_Qty) as Actual_Demand_Qty,
+sum(f.Reorder_Point) as Reorder_Point
+from silver.fact_forecast_demand as f
+left join Silver.dim_product as p
+on f.Product_ID = p.Product_ID
+group by Category
+order by Actual_Demand_Qty asc;
+---->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+---Highest demand regions 
+/* 
+South = 43187 - demand Qty
+West = 42975 - demand Qty
+KPK = 42476 - demand Qty
+*/
+select
+r.Region,
+sum(f.Actual_Demand_Qty) as Demand_Qty
+from silver.fact_forecast_demand as f
+left join Silver.dim_region as r
+on f.Region_ID = r.Region_ID
+group by r.Region
+order by Demand_Qty desc;
+----------
+---Lowest demand regions 
+/* 
+Sindh = 38115 - demand Qty
+Central = 38132 - demand Qty
+North = 38592 - demand Qty
+*/
+select
+r.Region,
+sum(f.Actual_Demand_Qty) as Demand_Qty
+from silver.fact_forecast_demand as f
+left join Silver.dim_region as r
+on f.Region_ID = r.Region_ID
+group by r.Region
+order by Demand_Qty asc;
+----->>>>>>>>>>>>>>>>>>>>>>>>>
+---Demand By Months & Querter-----
+select
+t.Months,
+t.Months_Demand_Qty,
+t.Quarter,
+sum(Months_Demand_Qty) over ( partition by 
+			t.quarter) as Quarter_Demand_Qty
+from (select
+month(f.Date) as Months,
+datepart(QUARTER,f.Date) as Quarter,
+sum(f.Actual_Demand_Qty) as Months_Demand_Qty
+--sum(f.Actual_Demand_Qty) as 
+from silver.fact_forecast_demand as f
+group by 
+	month(f.Date) ,
+	datepart(QUARTER,f.Date)
+)t
+order by 
+Months_Demand_Qty desc;
+------>>>>>>>>>>>>>
+---Demand By Channel-----
+select
+c.Channel,
+sum(f.Actual_Demand_Qty) as Demand_Qty
+from Silver.fact_forecast_demand as f
+left join Silver.dim_channel as c
+on f.Channel_ID = c.Channel_Id
+group by c.Channel
+order by Demand_Qty desc;
+----->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+----Demand Growth By Months
+with Demand_Growth as (
+select
+Months,
+lag(Total_Demand_Qty) over 
+		(order by Months) as Previous_Demand_Qty_Month,
+Total_Demand_Qty
+from (
+select
+month(f.Date) as Months,
+sum(f.Actual_Demand_Qty) as Total_Demand_Qty
+from Silver.fact_forecast_demand as f
+group by month(f.Date)
+)t
+)
+select
+t.Months,
+t.Previous_Demand_Qty_Month,
+Total_Demand_Qty,
+format((round(t.Growth_By_Months,3)),'p') as Growth_By_Months
+from(
+select*,
+(((Total_Demand_Qty - Previous_Demand_Qty_Month)/ cast((
+Previous_Demand_Qty_Month) as float))) as Growth_By_Months
+from Demand_Growth
+)t;
+------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+----Demand Growth By Quarter
+with Growth_By_Quarter as (
+select
+DATEPART(QUARTER,f.Date) as Quarters,
+sum(f.Actual_Demand_Qty) as Demand_Qty
+from Silver.fact_forecast_demand as f
+group by DATEPART(QUARTER,f.Date)
+)
+select*,
+format(round(((t.Demand_Qty-t.Previous_Quarter_Demand)/
+	cast(t.Previous_Quarter_Demand 
+			as float)),3),'p') as Quarter_Growth
+from (
+select*,
+lag(q.demand_qty) over (order by q.quarters)
+			as Previous_Quarter_Demand
+from Growth_By_Quarter as q
+)t;
+--------------------------->>>>>>>>>>>>>>>>>>>>>>>>
+
+---Seasonality Demand
+select
+p.Promotion_Type,
+sum(f.Actual_Demand_Qty) AS Demand_Qty
+from Silver.fact_forecast_demand as f
+left join Silver.dim_promotion as p
+on f.Promotion_ID = p.Promotion_ID
+group by p.Promotion_Type
+having Promotion_Type = 'Seasonal';
+------>>>>>>>>>>>>>>>>>>>>>>>>>>>
+----Moving Average-----
+select
+t.Months,
+round(t.Avg_Sales_By_Month,2) as Avg_Sales_By_Month,
+round(avg(Avg_Sales_By_Month) over (
+	order by months desc rows between current row
+	and unbounded following ),2) as Moving_Avg
+from
+(
+select
+datepart(month,f.Date) as Months,
+avg(f.Sales_Value) as Avg_Sales_By_Month
+from Silver.fact_forecast_demand as f
+group by datepart(month,f.Date)
+)t;
+---->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+----Rolling Average-----
+select
+t.Months,
+round(t.Avg_Sales_By_Month,2) as Avg_Sales_By_Month,
+round(avg(Avg_Sales_By_Month) over (
+	order by months asc rows between current row
+	and 2 following ),1) as Moving_Avg
+from
+(
+select
+datepart(month,f.Date) as Months,
+avg(f.Sales_Value) as Avg_Sales_By_Month
+from Silver.fact_forecast_demand as f
+group by datepart(month,f.Date)
+)t;
+------>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+-->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+--Forecast Analysis ------
+---->>>>>>>>>>>>>>>>>>>>>>>>>>>>
+--- Forecast Error -----
+select*,
+(Actual_Demand - Forecast_Demand) as Forecast_Error
+from (
+select
+month(f.Date) as Months,
+sum(f.Actual_Demand_Qty) as Actual_Demand,
+sum(f.Forecast_Qty) as Forecast_Demand
+from Silver.fact_forecast_demand as f
+group by month(f.Date)
+)t
+order by Months asc;
+---->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+---- Percentage Error -----
+select*,
+format((Actual_Demand - Forecast_Demand)/ cast
+		(Actual_Demand as float),'p') as Percentage_Error
+from (
+select
+month(f.Date) as Months,
+sum(f.Actual_Demand_Qty) as Actual_Demand,
+sum(f.Forecast_Qty) as Forecast_Demand
+from Silver.fact_forecast_demand as f
+group by month(f.Date)
+)t
+order by months asc;
+--->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+--- Absolute Error ----
+select*,
+abs(Actual_Demand - Forecast_Demand) as Absolute_Error
+from (
+select
+month(f.Date) as Months,
+sum(f.Actual_Demand_Qty) as Actual_Demand,
+sum(f.Forecast_Qty) as Forecast_Demand
+from Silver.fact_forecast_demand as f
+group by month(f.Date)
+)t;
+---->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+--- APE (Absolute Percentage Error )
+select*,
+format((abs(Actual_Demand - Forecast_Demand))
+	/cast(Actual_Demand as float),'p') as Absolute_Percentage_Error
+from (
+select
+month(f.Date) as Months,
+sum(f.Actual_Demand_Qty) as Actual_Demand,
+sum(f.Forecast_Qty) as Forecast_Demand
+from Silver.fact_forecast_demand as f
+group by  month(f.Date)
+)t
+order by Months asc;
+--->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+--- MAE (Mean Absolute Error ) Two Ways
+with forecast as (
+select
+month(f.Date) as Months,
+sum(f.Actual_Demand_Qty) as Actual_Demand,
+sum(f.Forecast_Qty) as Forecast_Demand
+from Silver.fact_forecast_demand as f
+group by month(f.Date)
+)
+select*,
+round((Sum_Abs_Error / cast(n as float)),2)
+		as Mean_Absolute_Error
+from (
+select
+f.Months,
+sum(abs(f.Actual_Demand - f.Forecast_Demand))
+		over() as Sum_Abs_Error,
+count(f.Months) over() as n
+from forecast as f
+)t;
+----- Second Way
+select*,
+avg(abs(t.Actual_Demand - t.Forecast_Demand))
+		over() as Mean_Absolute_Error
+from (
+select
+month(f.Date) as Months,
+sum(f.Actual_Demand_Qty) as Actual_Demand,
+sum(f.Forecast_Qty) as Forecast_Demand
+from Silver.fact_forecast_demand as f
+group by month(f.Date)
+)t;
+----->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+--- MAP (Mean Absolute Percentage Error )
+with forecast as (
+select
+month(f.Date) as Months,
+sum(f.Actual_Demand_Qty) as Actual_Demand,
+sum(f.Forecast_Qty) as Forecast_Demand
+from Silver.fact_forecast_demand as f
+group by month(f.Date)
+)
+select*,
+((round(avg(abs((Actual_Demand - Forecast_Demand)
+	/cast(Actual_Demand as float)))
+			over(),4))*100) as MAPE
+from forecast;
+----->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+--- Forecast Accuracy ------------
+with forecast as (
+select
+month(f.Date) as Months,
+sum(f.Actual_Demand_Qty) as Actual_Demand,
+sum(f.Forecast_Qty) as Forecast_Demand
+from Silver.fact_forecast_demand as f
+group by month(f.Date)
+)
+select*,
+100 - ((round(avg(abs((Actual_Demand - Forecast_Demand)
+	/cast(Actual_Demand as float)))
+			over(),4))*100) as Forecast_Accuracy_Percentage
+from forecast;
+---->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+--- Forecast Bias ------------
+with forecast as (
+select
+month(f.Date) as Months,
+sum(f.Actual_Demand_Qty) as Actual_Demand,
+sum(f.Forecast_Qty) as Forecast_Demand
+from Silver.fact_forecast_demand as f
+group by month(f.Date)
+)
+select*,
+sum(Actual_Demand - Forecast_Demand) over()
+		as Forecast_Bias
+from forecast;
+---->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+--- WAPE ( Weighted Absolute Percentage Error ) ---------
+with forecast as (
+select
+month(f.Date) as Months,
+sum(f.Actual_Demand_Qty) as Actual_Demand,
+sum(f.Forecast_Qty) as Forecast_Demand
+from Silver.fact_forecast_demand as f
+group by month(f.Date)
+)
+select*,
+format(round((sum(Actual_Demand - Forecast_Demand) over()
+/ cast(sum(Actual_Demand)
+	over() as float)),4),'p')  as WAPE
+from forecast
+order by Months asc;
+----->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+--- MAD (Mean Absolute Deviation) ------
+with forecast as (
+select
+month(f.Date) as Months,
+sum(f.Actual_Demand_Qty) as Actual_Demand,
+sum(f.Forecast_Qty) as Forecast_Demand
+from Silver.fact_forecast_demand as f
+group by month(f.Date)
+)
+select*,
+avg(abs(f.Actual_Demand -f.Forecast_Demand)) over() as MAD
+from forecast as f;
+---->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+--- RMSE (Root Mean Squared Error) ------
+with forecast as (
+select
+month(f.Date) as Months,
+sum(f.Actual_Demand_Qty) as Actual_Demand,
+sum(f.Forecast_Qty) as Forecast_Demand
+from Silver.fact_forecast_demand as f
+group by month(f.Date)
+)
+select
+t.Months,
+t.Actual_Demand,
+t.Forecast_Demand,
+round(sqrt(t.avg_),3) as RMSE
+from 
+(select*,
+avg(t.s * t.s) over() as avg_
+from (
+select*,
+(f.Actual_Demand - f.Forecast_Demand) as s
+from forecast as f
+)t
+)t;
+------>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+--- Tracking Signal ------
+with forecast as (
+select
+month(f.Date) as Months,
+sum(f.Actual_Demand_Qty) as Actual_Demand,
+sum(f.Forecast_Qty) as Forecast_Demand
+from Silver.fact_forecast_demand as f
+group by month(f.Date)
+)
+select*,
+round((Cumulative_Forecast_Error /cast(
+		MAD as float)),2) as Tracking_Signal
+from (
+select*,
+sum(f.Actual_Demand - f.Forecast_Demand)
+	over() as Cumulative_Forecast_Error,
+avg(abs(f.Actual_Demand -f.Forecast_Demand))
+		over() as MAD
+from forecast as f
+)t;
+----->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+--- Variance Percentage ------
+with forecast as (
+select
+month(f.Date) as Months,
+sum(f.Actual_Demand_Qty) as Actual_Demand,
+sum(f.Forecast_Qty) as Forecast_Demand
+from Silver.fact_forecast_demand as f
+group by month(f.Date)
+)
+select*,
+format(((f.Actual_Demand - f.Forecast_Demand)
+	/cast(Forecast_Demand as float)),'p')
+			as Variance_Percentage
+from forecast as f;
+---->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+----->>>>>>>>>>>>>>>>>>>>>>>>>
